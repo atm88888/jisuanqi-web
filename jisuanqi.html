@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#e65100">
+<title>大嘴猴计算站</title>
+<style>
+  * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+  html, body { margin:0; padding:0; overscroll-behavior:none; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #fff3c4 0%, #ffe0b2 55%, #f2f5f3 100%);
+    color:#1a2b21; min-height:100vh; min-height:100dvh;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ============ 登录页 ============ */
+  .gate {
+    position:fixed; inset:0; z-index:100;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:20px; text-align:center;
+    background: linear-gradient(180deg, #fff3c4 0%, #ffe0b2 100%);
+    transition: opacity .45s, transform .45s;
+  }
+  .gate.gone { opacity:0; transform:scale(.92); pointer-events:none; }
+
+  .login-title { font-size:22px; font-weight:900; color:#e65100; margin-bottom:4px; }
+  .login-sub   { font-size:13px; color:#bf360c; margin-bottom:22px; opacity:.85; }
+
+  /* ---- 大嘴猴 ---- */
+  .monkey { width:230px; height:230px; position:relative; margin-bottom:22px; transition:transform .3s; }
+  .monkey.tap { transform:scale(1.06); }
+  .monkey.shake { animation: shake .5s; }
+  @keyframes shake {
+    0%,100%{transform:translateX(0) rotate(0);}
+    15%{transform:translateX(-16px) rotate(-6deg);}
+    30%{transform:translateX(16px) rotate(6deg);}
+    45%{transform:translateX(-12px) rotate(-4deg);}
+    60%{transform:translateX(12px) rotate(4deg);}
+    75%{transform:translateX(-6px) rotate(-2deg);}
+  }
+
+  .ear {
+    width:58px; height:58px; background:#f5c542; border:3px solid #d99a00;
+    border-radius:50%; position:absolute; top:26px;
+    box-shadow: inset 0 3px 0 rgba(255,255,255,.5);
+  }
+  .ear::after {
+    content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:26px; height:26px; background:#ff8a65; border-radius:50%;
+  }
+  .ear.l { left:2px; } .ear.r { right:2px; }
+
+  .face {
+    width:210px; height:200px; margin:0 auto; position:relative;
+    background: radial-gradient(circle at 50% 35%, #ffdd66 0%, #f5c542 70%);
+    border:3px solid #d99a00; border-radius:48% 48% 44% 44%;
+    box-shadow: 0 10px 28px rgba(190,130,0,.32);
+  }
+  /* 脸颊腮红 */
+  .face::before, .face::after {
+    content:''; position:absolute; top:96px; width:26px; height:16px;
+    background:rgba(255,120,90,.35); border-radius:50%;
+  }
+  .face::before { left:22px; } .face::after { right:22px; }
+
+  .eyes { display:flex; justify-content:center; gap:34px; padding-top:38px; position:relative; z-index:2; }
+  .eye {
+    width:48px; height:48px; background:#fff; border:2.5px solid #3a2a10;
+    border-radius:50%; position:relative; overflow:hidden;
+    transition: all .3s;
+  }
+  .pupil {
+    width:20px; height:20px; background:#2b1c08; border-radius:50%;
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    transition: all .3s;
+  }
+  .pupil::after {
+    content:''; position:absolute; top:3px; left:4px;
+    width:6px; height:6px; background:#fff; border-radius:50%;
+  }
+  /* 翻白眼 */
+  .monkey.eye-roll .eye { background:#e8e8e8; }
+  .monkey.eye-roll .pupil {
+    top:7px; width:34px; height:7px; border-radius:5px; background:#9e9e9e;
+  }
+  .monkey.eye-roll .pupil::after { display:none; }
+  /* 眯眼开心 */
+  .monkey.happy .eye { height:20px; border-radius:0 0 30px 30px; background:#3a2a10; }
+  .monkey.happy .pupil { display:none; }
+
+  /* 大嘴 */
+  .mouth {
+    width:132px; height:34px; margin:14px auto 0; position:relative; z-index:2;
+    background:#4a1200; border:3px solid #330c00;
+    border-radius:0 0 66px 66px; overflow:hidden;
+    transition: height .35s cubic-bezier(.175,.885,.32,1.275);
+  }
+  .monkey.happy .mouth { height:74px; background:linear-gradient(180deg,#c62828 0%, #ff5252 100%); }
+  .tooth-row { display:flex; justify-content:center; gap:5px; padding-top:3px; }
+  .tooth { width:15px; height:16px; background:#fff; border-radius:0 0 4px 4px; box-shadow:0 1px 0 #ddd; }
+  .tongue {
+    width:46px; height:24px; background:#ff8a80; border-radius:24px 24px 0 0;
+    position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+    opacity:0; transition:opacity .3s .1s;
+  }
+  .monkey.happy .tongue { opacity:1; }
+
+  /* 鼻子 */
+  .nose { display:flex; justify-content:center; gap:8px; margin-top:6px; position:relative; z-index:2; }
+  .nostril { width:7px; height:5px; background:#a1700a; border-radius:50%; }
+
+  .pwd-input {
+    width:210px; padding:15px; font-size:24px; text-align:center;
+    letter-spacing:10px; border:3px solid #ff9800; border-radius:16px;
+    background:#fff; outline:none; font-weight:800; color:#e65100;
+    transition: all .2s;
+  }
+  .pwd-input:focus { border-color:#e65100; box-shadow:0 0 0 4px rgba(255,152,0,.22); }
+  .pwd-input.bad { border-color:#f44336; animation: pulse .4s; }
+  @keyframes pulse { 50%{transform:scale(1.05);} }
+
+  .hint {
+    font-size:15px; color:#d32f2f; margin-top:14px; min-height:24px;
+    font-weight:800; transition:all .3s;
+  }
+  .hint.show { animation: bp .45s; }
+  @keyframes bp { 50%{transform:translateY(-6px) scale(1.08);} }
+
+  /* 成功弹字 */
+  .yeah {
+    position:fixed; top:44%; left:50%; z-index:200;
+    transform:translate(-50%,-50%) scale(0) rotate(-12deg);
+    background:#43a047; color:#fff; padding:18px 36px; border-radius:22px;
+    font-size:26px; font-weight:900; white-space:nowrap;
+    box-shadow:0 12px 40px rgba(0,0,0,.3);
+    transition:transform .45s cubic-bezier(.175,.885,.32,1.275);
+  }
+  .yeah.show { transform:translate(-50%,-50%) scale(1) rotate(-4deg); }
+
+  /* ============ 计算器 ============ */
+  .wrap { max-width:480px; margin:0 auto; padding:14px; padding-bottom:max(14px, env(safe-area-inset-bottom)); display:none; }
+  .wrap.show { display:block; animation: fadeUp .5s; }
+  @keyframes fadeUp { from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:translateY(0);} }
+
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:8px 2px 2px; }
+  .topbar h1 { font-size:19px; margin:0; color:#147a42; }
+  .lock {
+    font-size:12px; color:#bf360c; background:#fff3c4; border:1px solid #ffcc80;
+    padding:6px 12px; border-radius:20px; cursor:pointer; font-weight:700;
+  }
+  .topbar .sub { font-size:11px; color:#8d9f94; width:100%; margin-top:4px; }
+
+  .card {
+    background:#fff; border-radius:18px; padding:18px 16px; margin-top:14px;
+    box-shadow:0 4px 18px rgba(20,80,45,.07);
+  }
+  .card + .card { margin-top:12px; }
+
+  label { display:block; font-size:13px; color:#5a7364; margin:0 0 6px; font-weight:600; }
+  .input {
+    width:100%; padding:14px 12px; font-size:18px; font-weight:600;
+    border:1.5px solid #e0ebe4; background:#f7fbf8; border-radius:12px;
+    color:#1a2b21; outline:none; transition:.18s; text-align:left;
+    -webkit-appearance:none; appearance:none;
+  }
+  .input:focus { border-color:#1faa5c; background:#fff; box-shadow:0 0 0 3px rgba(31,170,92,.1); }
+  .input::placeholder { color:#b9c7be; font-weight:400; }
+
+  .grid2 { display:flex; gap:10px; }
+  .grid2 > div { flex:1; }
+
+  .tag { display:inline-block; font-size:11px; color:#1faa5c; background:#e6f7ee; padding:3px 8px; border-radius:20px; margin-left:6px; font-weight:500; }
+
+  .btn {
+    width:100%; padding:15px; font-size:17px; font-weight:700; color:#fff;
+    background:linear-gradient(135deg,#25b863,#15994a); border:none; border-radius:13px;
+    cursor:pointer; margin-top:16px; box-shadow:0 6px 14px rgba(21,153,74,.28);
+    transition:transform .08s; touch-action:manipulation;
+  }
+  .btn:active { transform:scale(.97); }
+
+  .result { text-align:center; padding:8px 0 4px; }
+  .result .lab { font-size:12px; color:#8d9f94; }
+  .result .val {
+    font-size:38px; font-weight:800; color:#147a42; margin-top:2px;
+    letter-spacing:-.5px; word-break:break-all; transition:transform .3s cubic-bezier(.175,.885,.32,1.275);
+  }
+  .result .val.pop { transform:scale(1.12); }
+
+  .steps { margin-top:14px; }
+  .step {
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    font-size:13px; color:#5a7364; padding:9px 12px; border-radius:10px;
+    background:#f8fbf9; margin-bottom:4px; flex-wrap:wrap;
+    animation: fadeIn .3s ease both;
+  }
+  @keyframes fadeIn { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+  .step:nth-child(1){animation-delay:0s} .step:nth-child(2){animation-delay:.05s}
+  .step:nth-child(3){animation-delay:.1s} .step:nth-child(4){animation-delay:.15s}
+  .step:nth-child(5){animation-delay:.2s}
+
+  .step .lhs { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .step .rhs { font-weight:700; color:#147a42; flex-shrink:0; }
+  .step .rhs.ex { color:#d67a00; } .step .rhs.ey { color:#8e5cd6; }
+
+  .divider { height:1px; background:#eef3f0; margin:12px 0; }
+  .sec-title { font-size:12px; color:#8d9f94; margin:0 0 4px; display:flex; align-items:center; gap:6px; }
+  .sec-title .bar { width:3px; height:12px; border-radius:2px; display:inline-block; }
+  .sec-title .sub { font-weight:400; color:#b3bfb7; }
+
+  .copy {
+    width:100%; padding:13px; font-size:15px; font-weight:600; color:#15994a;
+    background:#fff; border:1.5px solid #b9e5cb; border-radius:13px; cursor:pointer;
+    margin-top:12px; transition:transform .08s; touch-action:manipulation;
+  }
+  .copy:active { transform:scale(.97); }
+
+  .toast {
+    position:fixed; left:50%; bottom:max(40px, env(safe-area-inset-bottom,40px));
+    transform:translateX(-50%) translateY(20px);
+    background:rgba(26,43,33,.93); color:#fff; padding:11px 20px; border-radius:24px;
+    font-size:14px; opacity:0; pointer-events:none; transition:.25s; z-index:99;
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  @media (prefers-color-scheme: dark) {
+    body { background:linear-gradient(180deg,#1a2b21 0%,#0f1a14 100%); }
+    .gate { background:linear-gradient(180deg,#3a2a10 0%,#1a2b21 100%); }
+    .card { background:#25362d; box-shadow:0 4px 18px rgba(0,0,0,.3); }
+    .input { background:#2a3d33; border-color:#3d5549; color:#d4e0d8; }
+    .input:focus { border-color:#1faa5c; background:#2a3d33; }
+    .input::placeholder { color:#5a7364; }
+    .step { background:#2a3d33; color:#b3c7bb; }
+    .step .rhs { color:#35c46a; } .step .rhs.ex { color:#e89a30; } .step .rhs.ey { color:#b080e0; }
+    .divider { background:#3d5549; } .sec-title { color:#8da89b; }
+    .sec-title .sub { color:#5a7364; }
+    .copy { background:#25362d; border-color:#3d5549; color:#35c46a; }
+    .tag { background:#2a4d3a; color:#35c46a; }
+    .result .val { color:#35c46a; }
+    .pwd-input { background:#2a3d33; color:#ffb74d; }
+    .toast { background:rgba(15,26,20,.95); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== 大嘴猴密码门 ===== -->
+<div class="gate" id="gate">
+  <div class="monkey" id="monkey" onclick="poke()">
+    <div class="ear l"></div><div class="ear r"></div>
+    <div class="face">
+      <div class="eyes">
+        <div class="eye"><div class="pupil"></div></div>
+        <div class="eye"><div class="pupil"></div></div>
+      </div>
+      <div class="nose"><div class="nostril"></div><div class="nostril"></div></div>
+      <div class="mouth">
+        <div class="tooth-row">
+          <div class="tooth"></div><div class="tooth"></div><div class="tooth"></div>
+          <div class="tooth"></div><div class="tooth"></div><div class="tooth"></div>
+        </div>
+        <div class="tongue"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-title">🐵 大嘴猴守门中</div>
+  <div class="login-sub">输对六位密码才放你进去（点猴子有惊喜）</div>
+  <input class="pwd-input" id="pwd" type="password" maxlength="6" placeholder="······" inputmode="numeric">
+  <div class="hint" id="hint"></div>
+</div>
+
+<div class="yeah" id="yeah">🎉 算你聪明！</div>
+
+<!-- ===== 差额计算器 ===== -->
+<div class="wrap" id="wrap">
+  <div class="topbar">
+    <div style="flex:1">
+      <h1>差额计算器</h1>
+      <div class="sub">取整版 / 精确版 · d、e 留空或填 0 均可</div>
+    </div>
+    <div class="lock" onclick="lockIt()">🔒 锁上</div>
+  </div>
+
+  <div class="card">
+    <label>本金</label>
+    <input class="input" id="A" type="number" inputmode="decimal" step="any" value="10000">
+    <div class="grid2" style="margin-top:14px">
+      <div>
+        <label>基准价 Y</label>
+        <input class="input" id="Y" type="number" inputmode="decimal" step="any" value="6.68">
+      </div>
+      <div>
+        <label>增量 d <span class="tag">可留空</span></label>
+        <input class="input" id="d" type="number" inputmode="decimal" step="any" placeholder="例 0.08">
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <label>补点 e <span class="tag">可留空</span></label>
+      <input class="input" id="e" type="number" inputmode="decimal" step="any" placeholder="例 0.02">
+    </div>
+    <button class="btn" onclick="calc()">计 算</button>
+  </div>
+
+  <div class="card">
+    <div class="result">
+      <div class="lab">最终结果</div>
+      <div class="val" id="out">—</div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="sec-title"><span class="bar" style="background:#25b863"></span>取整版步骤</div>
+    <div class="steps" id="steps"></div>
+
+    <div class="divider"></div>
+    <div class="sec-title"><span class="bar" style="background:#d67a00"></span>精确版（不取整）</div>
+    <div class="steps" id="exact"></div>
+
+    <div class="divider"></div>
+    <div class="sec-title"><span class="bar" style="background:#8e5cd6"></span>补点 e 单独计算 <span class="sub">（只看补点带来的差额）</span></div>
+    <div class="steps" id="epart"></div>
+
+    <button class="copy" onclick="copyRes()">复制计算公式</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">已复制</div>
+
+<script>
+/* ===== 密码门 ===== */
+var SECRET = '888888';
+var gate = document.getElementById('gate');
+var monkey = document.getElementById('monkey');
+var pwd = document.getElementById('pwd');
+var hint = document.getElementById('hint');
+var yeah = document.getElementById('yeah');
+
+pwd.addEventListener('input', function(){
+  hint.textContent = ''; hint.classList.remove('show');
+  pwd.classList.remove('bad');
+  monkey.classList.remove('eye-roll','shake');
+  if (this.value.length === 6) tryIt();
+});
+
+function tryIt(){
+  if (pwd.value === SECRET){
+    monkey.classList.add('happy');
+    yeah.classList.add('show');
+    setTimeout(function(){ yeah.classList.remove('show'); }, 900);
+    setTimeout(function(){
+      gate.classList.add('gone');
+      document.getElementById('wrap').classList.add('show');
+      calc();
+    }, 700);
+  } else {
+    monkey.classList.add('eye-roll','shake');
+    pwd.classList.add('bad');
+    hint.textContent = '你可长点心吧 🐵';
+    hint.classList.add('show');
+    setTimeout(function(){ hint.classList.remove('show'); }, 450);
+    pwd.value = '';
+    setTimeout(function(){ monkey.classList.remove('eye-roll','shake'); pwd.classList.remove('bad'); }, 500);
+  }
+}
+
+function poke(){
+  monkey.classList.add('eye-roll');
+  var words = ['别戳了，输密码！','再戳我翻白眼了','六位数，想想看','戳够了吗～'];
+  hint.textContent = words[Math.floor(Math.random()*words.length)];
+  setTimeout(function(){ monkey.classList.remove('eye-roll'); }, 700);
+  pwd.focus();
+}
+
+function lockIt(){
+  document.getElementById('wrap').classList.remove('show');
+  gate.classList.remove('gone');
+  monkey.classList.remove('happy','eye-roll','shake');
+  pwd.value = ''; hint.textContent = '';
+  setTimeout(function(){ pwd.focus(); }, 300);
+}
+
+/* ===== 计算器（逻辑原样保留） ===== */
+function getVal(id){
+  var el=document.getElementById(id);
+  if(el.value.trim()==='') return 0;
+  var v=parseFloat(el.value);
+  return isNaN(v)?0:v;
+}
+function fmt(v){
+  return (Math.round(v*100000)/100000).toString().replace(/\B(?=(\d{3})+(?!\d))/g,",");
+}
+function calc(){
+  var A=getVal('A'), Y=getVal('Y'), d=getVal('d'), e=getVal('e');
+  var out=document.getElementById('out');
+  if(!(A>0 && Y>0)){ out.textContent='—'; showToast('本金和基准价必须大于0'); return; }
+
+  var denom=Y+d;
+  var Z1=Math.floor(A/Y);
+  var Z2=Math.floor(A/denom);
+  var D=Z1-Z2;
+  var F=D*Y;
+  var denomFull=Y+d+e;
+  var exD=A/Y-A/denomFull;
+  var exF=exD*Y;
+
+  out.textContent=fmt(F);
+  out.classList.add('pop'); setTimeout(function(){out.classList.remove('pop');},220);
+
+  document.getElementById('steps').innerHTML=
+    '<div class="step"><span class="lhs">'+fmt(A)+' ÷ '+fmt(Y)+'</span><span class="rhs">= '+fmt(A/Y)+' → '+Z1+'</span></div>'+
+    '<div class="step"><span class="lhs">'+fmt(A)+' ÷ '+fmt(denom)+'</span><span class="rhs">= '+fmt(A/denom)+' → '+Z2+'</span></div>'+
+    '<div class="step"><span class="lhs">('+Z1+' − '+Z2+') × '+fmt(Y)+'</span><span class="rhs">= '+fmt(F)+'</span></div>';
+
+  document.getElementById('exact').innerHTML=
+    '<div class="step"><span class="lhs">'+fmt(A)+' ÷ '+fmt(Y)+' − '+fmt(A)+' ÷ '+fmt(denomFull)+'</span><span class="rhs ex">= '+fmt(exD)+'</span></div>'+
+    '<div class="step"><span class="lhs">'+fmt(exD)+' × '+fmt(Y)+'</span><span class="rhs ex">= '+fmt(exF)+'</span></div>';
+
+  var denomE=Y+e;
+  var Z1e=Math.floor(A/Y);
+  var Z2e=Math.floor(A/denomE);
+  var De=Z1e-Z2e;
+  var Fe=De*Y;
+  var exDe=A/Y-A/denomE;
+  var exFe=exDe*Y;
+  document.getElementById('epart').innerHTML=
+    '<div class="step"><span class="lhs">'+fmt(A)+' ÷ '+fmt(Y)+'</span><span class="rhs ey">= '+fmt(A/Y)+' → '+Z1e+'</span></div>'+
+    '<div class="step"><span class="lhs">'+fmt(A)+' ÷ '+fmt(denomE)+'</span><span class="rhs ey">= '+fmt(A/denomE)+' → '+Z2e+'</span></div>'+
+    '<div class="step"><span class="lhs">('+Z1e+' − '+Z2e+') × '+fmt(Y)+'</span><span class="rhs ey">= '+fmt(Fe)+'</span></div>'+
+    '<div class="step"><span class="lhs">'+fmt(A/Y)+' − '+fmt(A/denomE)+'</span><span class="rhs ey">= '+fmt(exDe)+'</span></div>'+
+    '<div class="step"><span class="lhs">'+fmt(exDe)+' × '+fmt(Y)+'</span><span class="rhs ey">= '+fmt(exFe)+'</span></div>';
+
+  window._last=
+    '【取整版】\n'+
+    fmt(A)+' ÷ '+fmt(Y)+' = '+fmt(A/Y)+' → '+Z1+'\n'+
+    fmt(A)+' ÷ '+fmt(denom)+' = '+fmt(A/denom)+' → '+Z2+'\n'+
+    '('+Z1+' − '+Z2+') × '+fmt(Y)+' = '+fmt(F)+'\n\n'+
+    '【精确版】\n'+
+    fmt(A)+' ÷ '+fmt(Y)+' − '+fmt(A)+' ÷ '+fmt(denomFull)+' = '+fmt(A/Y)+' − '+fmt(A/denomFull)+' = '+fmt(exD)+'\n'+
+    fmt(exD)+' × '+fmt(Y)+' = '+fmt(exF)+'\n\n'+
+    '【只算补点】\n'+
+    fmt(A)+' ÷ '+fmt(Y)+' = '+fmt(A/Y)+' → '+Z1e+'\n'+
+    fmt(A)+' ÷ '+fmt(denomE)+' = '+fmt(A/denomE)+' → '+Z2e+'\n'+
+    '('+Z1e+' − '+Z2e+') × '+fmt(Y)+' = '+fmt(Fe)+'\n'+
+    fmt(A/Y)+' − '+fmt(A/denomE)+' = '+fmt(exDe)+'\n'+
+    fmt(exDe)+' × '+fmt(Y)+' = '+fmt(exFe);
+}
+function copyRes(){
+  calc();
+  var t=window._last;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){showToast('已复制');},function(){fallback(t);});
+  } else { fallback(t); }
+}
+function fallback(t){
+  var ta=document.createElement('textarea');
+  ta.value=t; document.body.appendChild(ta); ta.select();
+  try{document.execCommand('copy'); showToast('已复制');}catch(err){showToast('请长按结果手动复制');}
+  document.body.removeChild(ta);
+}
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(window._tt); window._tt=setTimeout(function(){t.classList.remove('show');},1600);
+}
+['A','Y','d','e'].forEach(function(id){
+  document.getElementById(id).addEventListener('input',function(){
+    clearTimeout(window._ct); window._ct=setTimeout(calc,300);
+  });
+});
+setTimeout(function(){ pwd.focus(); }, 400);
+</script>
+</body>
+</html>
